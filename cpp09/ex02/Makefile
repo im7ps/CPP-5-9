@@ -6,15 +6,16 @@
 #    By: sgerace <sgerace@student.42.fr>            +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2023/07/03 23:47:15 by sgerace           #+#    #+#              #
-#    Updated: 2023/07/05 00:59:26 by sgerace          ###   ########.fr        #
+#    Updated: 2023/07/06 17:17:09 by sgerace          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
-NAME	=	al-Khwārizmī
+NAME	=	PmergeMe
 CC		=	c++
-CFLAGS	=	-std=c++98 -Wall -Wextra -Werror
+CFLAGS	=	#-std=c++98 -Wall -Wextra -Werror
 
 SRCS	=	main.cpp \
+			PmergeMe.cpp
 			
 all		:	$(NAME)
 
