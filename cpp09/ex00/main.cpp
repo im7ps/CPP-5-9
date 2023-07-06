@@ -6,7 +6,7 @@
 /*   By: sgerace <sgerace@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/07/05 06:57:58 by sgerace           #+#    #+#             */
-/*   Updated: 2023/07/05 13:19:00 by sgerace          ###   ########.fr       */
+/*   Updated: 2023/07/06 09:43:34 by sgerace          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,7 +47,7 @@ int check_first_line(std::ifstream& file, char div)
     }
 
     std::getline(file, line);
-    if (!line.compare("date | value\n"))
+    if (line.empty() || !line.compare("date | value\n"))
     {
         std::cout << "First line should be: date | value" << std::endl;
         return 1;
@@ -94,25 +94,22 @@ bool is_valid_date(std::string& dateStr)
 
 bool check_line(const std::string& line, std::string& date, double& value, char div)
 {
-    char        separator;
     std::string modifiedLine = line;
 
     std::replace(modifiedLine.begin(), modifiedLine.end(), ',', ' ');
-
     std::istringstream iss(modifiedLine);
-    std::cout << modifiedLine << std::endl;
     if (!(iss >> date))
     {
-        // std::cout << date << "\nA\n";
         if (!is_valid_date(date))
         {
-            // std::cout << "D\n";
             return false;
         }
     }
 
-    if (div != ',')
+    if (div == '|')
     {
+        char    separator;
+
         iss >> separator;
         if (separator != div && separator)
         {
@@ -123,7 +120,6 @@ bool check_line(const std::string& line, std::string& date, double& value, char 
     std::string valueString;
     if (!(iss >> valueString))
     {
-        // std::cout << valueString << "\nB\n";
         valueString = "-1";
         return false;
     }
@@ -131,7 +127,6 @@ bool check_line(const std::string& line, std::string& date, double& value, char 
     value = std::stod(valueString);
     if (value < 0 || value > 2147483647)
     {
-        // std::cout << "C\n";
         return false;
     }
     return true;
@@ -147,17 +142,53 @@ int file_validator(std::ifstream& file, std::multimap<std::string, double>& myma
         return 1;
     while (std::getline(file, line))
     {
-        if (check_line(line, date, value, div))
+        if (line.compare("\n") && line.compare("\0"))
         {
-            mymap.insert(std::make_pair(date, value));
-        }
-        else
-        {
-            value = -1;
-            mymap.insert(std::make_pair(date, value));
+            if (check_line(line, date, value, div))
+            {
+                mymap.insert(std::make_pair(date, value));
+            }
+            else
+            {
+                    value = -1;
+                    mymap.insert(std::make_pair(date, value));
+            }
         }
     }
     return 0;
+}
+
+void print_results(std::multimap<std::string, double> mymap, std::multimap<std::string, double> csvmap)
+{
+    std::multimap<std::string, double>::iterator myit;
+    std::multimap<std::string, double>::iterator csvit;
+
+    for (myit = mymap.begin(); myit != mymap.end(); ++myit)
+    {
+        std::string date = myit->first;
+        double userValue = myit->second;
+
+        csvit = csvmap.lower_bound(date);
+
+        if (csvit != csvmap.end())
+        {
+            double exchangeRate = csvit->second;
+            double result = userValue * exchangeRate;
+
+            if (userValue < 0)
+            {
+                std::cout << "Error\n";
+            }
+            else
+            {
+                std::cout << date << " => " << userValue << " => " << result << std::endl;
+            }
+        }
+        else
+        {
+            std::cout << "Date: " << date << ", Value: " << userValue << ", No corresponding data in CSV file\n";
+        }
+    }
 }
 
 int main(int argc, char* argv[])
@@ -169,9 +200,9 @@ int main(int argc, char* argv[])
     if (check_file(file))
         return 1;
 
-    // std::multimap<std::string, double> mymap;
-    // if (file_validator(file, mymap, '|'))
-    //     return 1;
+    std::multimap<std::string, double> mymap;
+    if (file_validator(file, mymap, '|'))
+        return 1;
 
     std::ifstream file_csv("./data.csv");
     if (check_file(file_csv))
@@ -180,11 +211,7 @@ int main(int argc, char* argv[])
     std::multimap<std::string, double> csvmap;
     file_validator(file_csv, csvmap, ',');
 
-    std::multimap<std::string, double>::iterator it;
-    for (it = csvmap.begin(); it != csvmap.end(); ++it)
-    {
-        std::cout << "Date: " << it->first << " ~ Value: " << it->second << std::endl;
-    }
+    print_results(mymap, csvmap);
 
     close_file(file);
     close_file(file_csv);
